@@ -1,0 +1,69 @@
+Sub ConvertSQLOnCZ()
+    Dim myRange As Range
+    Set myRange = Selection
+    'FM20.DLL
+    Dim clipboard As MSForms.DataObject
+    Set clipboard = New MSForms.DataObject
+    clipboard.SetText RangeToSQL(myRange)
+    clipboard.PutInClipboard
+    MsgBox "Da chuyen doi SQL thanh cong vao Clipboard"
+End Sub
+
+Function RangeToSQL(ByVal myRange As Range) As String
+    RangeToSQL = ""
+    If Not myRange Is Nothing Then
+        Dim myCell As Range
+        Dim oldCell As Range
+        Dim rowIdx As Integer
+        
+        For Each myCell In myRange
+            If rowIdx = 0 Then
+                rowIdx = myCell.Row
+                RangeToSQL = RangeToSQL & CellToSQL(myCell)
+            Else
+                If (myCell.Row > rowIdx) Then
+                    RangeToSQL = RangeToSQL & vbCrLf & CellToSQL(myCell)
+                Else
+                    RangeToSQL = RangeToSQL & " " & CellToSQL(myCell)
+                End If
+                rowIdx = myCell.Row
+            End If
+            
+        Next myCell
+        'Remove extra comma
+        'RangeToSQL = Right(RangeToSQL, Len(RangeToSQL) - 1)
+    End If
+End Function
+
+Function CellToSQL(ByVal myCell As Range) As String
+    Dim strArr() As String
+    If IsEmpty(myCell) Then
+        strOut = "    "
+    Else
+        TextInCell = myCell.Value
+        TextInCell = Trim(TextInCell)
+        strArr = Split(TextInCell, " ")
+        strOut = ""
+        For x = LBound(strArr) To UBound(strArr)
+            ThisWorkbook.Sheets(2).Range("A1").Value = strArr(x)
+            If (ThisWorkbook.Sheets(2).Range("B1") = "") Then
+                strOut = strOut & " " & strArr(x)
+            Else
+                strOut = strOut & " " & ThisWorkbook.Sheets(2).Range("B1")
+            End If
+        Next
+    End If
+    CellToSQL = strOut
+End Function
+
+Function RangeToString(ByVal myRange As Range) As String
+    RangeToString = ""
+    If Not myRange Is Nothing Then
+        Dim myCell As Range
+        For Each myCell In myRange
+            RangeToString = RangeToString & " " & myCell.Value
+        Next myCell
+        'Remove extra comma
+        RangeToString = Right(RangeToString, Len(RangeToString) - 1)
+    End If
+End Function
