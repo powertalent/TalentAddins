@@ -1,0 +1,30 @@
+Private Sub Workbook_Open()
+    Dim cmbBar As CommandBar
+    Dim cmbControl As CommandBarControl
+     
+    Set cmbBar = Application.CommandBars("Worksheet Menu Bar")
+    Set cmbControl = cmbBar.Controls.Add(Type:=msoControlPopup, temporary:=True) 'adds a menu item to the Menu Bar
+    With cmbControl
+        .Caption = "&TalentAddins" 'names the menu item
+        With .Controls.Add(Type:=msoControlButton) 'adds a dropdown button to the menu item
+            .Caption = "CZ - Convert SQL (Ctrl+Alt+J)" 'adds a description to the menu item
+            .OnAction = "" 'runs the specified macro
+            .FaceId = 1098 'assigns an icon to the dropdown
+        End With
+        With .Controls.Add(Type:=msoControlButton)
+            .Caption = "TODO"
+            .OnAction = "TODO"
+            .FaceId = 108
+        End With
+        With .Controls.Add(Type:=msoControlButton)
+            .Caption = "TODO"
+            .OnAction = "TODO"
+            .FaceId = 21
+        End With
+    End With
+End Sub
+ 
+Private Sub Workbook_BeforeClose(Cancel As Boolean)
+    On Error Resume Next 'in case the menu item has already been deleted
+    Application.CommandBars("Worksheet Menu Bar").Controls("My Macros").Delete 'delete the menu item
+End Sub
