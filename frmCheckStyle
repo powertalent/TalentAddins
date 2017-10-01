@@ -1,0 +1,148 @@
+Private Sub btnCheck_Click()
+    Dim fontNameCheck As String
+    Dim fontSizeCheck As String
+    Dim fontColorCheck As String
+    Dim sheetZoomCheck As String
+    
+    Dim currentCellAddrStr As String
+    currentCellAddrStr = ActiveSheet.Name & "!" & ActiveCell.Address(ReferenceStyle:=xlR1C1)
+        
+    fontNameCheck = txtFontName.Value
+    fontSizeCheck = txtFontSize.Value
+    fontColorCheck = cmbFontColor.Value
+    sheetZoomCheck = txtSheetZoom.Value
+    
+    If Trim(fontColorCheck) <> "" Then
+        Select Case fontColorCheck
+            Case "Black"
+                fontColorCheck = vbBlack
+            Case "Blue"
+                fontColorCheck = vbBlue
+            Case "Red"
+                fontColorCheck = vbRed
+            Case "White"
+                fontColorCheck = vbWhite
+            Case "Green"
+                fontColorCheck = vbGreen
+        End Select
+    End If
+    
+    lstBox.Clear
+    lstBox.ColumnCount = 2
+    Dim ws As Worksheet
+    For Each ws In ActiveWorkbook.Worksheets
+        
+        ' Get last address used
+        LastAddress = ws.Cells.SpecialCells(xlLastCell).Address(RowAbsolute:=False, ColumnAbsolute:=False)
+        
+        ' Check Sheet Zoom
+        If sheetZoomCheck <> "" Then
+            ws.Select
+            If ActiveWindow.Zoom <> CInt(sheetZoomCheck) Then
+                lstBox.AddItem ws.Name & "!R1C1"
+                lstBox.List(lstBox.ListCount - 1, 1) = "Sheet Zoom Error"
+            End If
+        End If
+        
+        For Each cell In ws.Range("A1:" & LastAddress)
+            If IsEmpty(cell) = False Then
+            
+                If Trim(fontNameCheck) <> "" And checkCellFontName(cell, fontNameCheck) = False Then
+                    lstBox.AddItem ws.Name & "!" & cell.Address(ReferenceStyle:=xlR1C1)
+                    lstBox.List(lstBox.ListCount - 1, 1) = "Font Name Error"
+                End If
+                
+                If fontSizeCheck <> "" Then
+                 If checkCellFontSize(cell, CInt(fontSizeCheck)) = False Then
+                    lstBox.AddItem ws.Name & "!" & cell.Address(ReferenceStyle:=xlR1C1)
+                    lstBox.List(lstBox.ListCount - 1, 1) = "Font Size Error"
+                 End If
+                End If
+                
+                If Trim(fontColorCheck) <> "" And checkCellColor(cell, fontColorCheck) = False Then
+                    lstBox.AddItem ws.Name & "!" & cell.Address(ReferenceStyle:=xlR1C1)
+                    lstBox.List(lstBox.ListCount - 1, 1) = "Font Color Error"
+                End If
+            End If
+        Next
+    Next
+    Application.Goto Reference:=currentCellAddrStr
+End Sub
+
+' Function Check Color of Cell
+Private Function checkCellColor(ByVal cell As Range, color As String) As Boolean
+    checkCellColor = True
+    On Error GoTo ErrCatcher
+        Dim cellColor As String
+        cellColor = cell.Font.color
+        If cellColor <> color Then
+            checkCellColor = False
+        End If
+        Exit Function
+ErrCatcher:
+        checkCellColor = False
+End Function
+
+' Function Check Font Size of Cell
+Private Function checkCellFontSize(ByVal cell As Range, fontSize As Integer) As Boolean
+    checkCellFontSize = True
+    On Error GoTo ErrCatcher
+        Dim cellFontSize As Integer
+        cellFontSize = cell.Font.Size
+        If cellFontSize <> fontSize Then
+            checkCellFontSize = False
+        End If
+        Exit Function
+ErrCatcher:
+        checkCellFontSize = False
+End Function
+
+' Function Check Font Name of Cell
+Private Function checkCellFontName(ByVal cell As Range, fontName As String) As Boolean
+    checkCellFontName = True
+    On Error GoTo ErrCatcher
+        Dim cellFontName As String
+        cellFontName = cell.Font.Name
+        If cellFontName <> fontName Then
+            checkCellFontName = False
+        End If
+        Exit Function
+ErrCatcher:
+        checkCellFontName = False
+End Function
+
+Private Sub lstBox_Click()
+    Application.Goto Reference:=lstBox.Value
+End Sub
+
+Private Sub UserForm_Initialize()
+    ' Get Font Name
+    txtFontName.Value = ThisWorkbook.Sheets("CheckStyle").Range("A2").Value
+    ' Get Font Size
+    txtFontSize.Value = ThisWorkbook.Sheets("CheckStyle").Range("B2").Value
+        
+    ' Init Combobox Font Color
+    cmbFontColor.AddItem ""
+    cmbFontColor.AddItem "Black"
+    cmbFontColor.AddItem "White"
+    cmbFontColor.AddItem "Blue"
+    cmbFontColor.AddItem "Red"
+    
+    ' Get Font Color
+    cmbFontColor.Value = ThisWorkbook.Sheets("CheckStyle").Range("C2").Value
+    
+    ' Get Sheet Zoom
+    txtSheetZoom.Value = ThisWorkbook.Sheets("CheckStyle").Range("D2").Value
+End Sub
+
+Private Sub UserForm_Terminate()
+    ' Save Font Name
+    ThisWorkbook.Sheets("CheckStyle").Range("A2").Value = txtFontName.Value
+    ' Save Font Size
+    ThisWorkbook.Sheets("CheckStyle").Range("B2").Value = txtFontSize.Value
+    ' Save Font Color
+    ThisWorkbook.Sheets("CheckStyle").Range("C2").Value = cmbFontColor.Value
+    ' Save Sheet Zoom
+    ThisWorkbook.Sheets("CheckStyle").Range("D2").Value = txtSheetZoom.Value
+End Sub
+
