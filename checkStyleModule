@@ -1,0 +1,12 @@
+Sub OpenCheckStyle()
+    frmCheckStyle.Show vbModeless
+End Sub
+
+Sub GoToFirstOfEachSheet()
+    Dim ws As Worksheet
+    For Each ws In ActiveWorkbook.Sheets
+        ws.Select
+        Range("A1").Activate
+    Next
+    ActiveWorkbook.Worksheets(1).Select
+End Sub
