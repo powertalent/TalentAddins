@@ -1,0 +1,33 @@
+' Source : https://excel.tips.net/T011281_Finding_Text_in_Text_Boxes.html
+Sub FindInShape1()
+    Dim rStart As Range
+    Dim shp As Shape
+    Dim sFind As String
+    Dim sTemp As String
+    Dim Response
+
+    sFind = InputBox("Search for?")
+    If Trim(sFind) = "" Then
+        MsgBox "Nothing entered"
+        Exit Sub
+    End If
+    Set rStart = ActiveCell
+    For Each shp In ActiveSheet.Shapes
+        sTemp = shp.TextFrame.Characters.Text
+        If InStr(LCase(sTemp), LCase(sFind)) <> 0 Then
+            shp.Select
+            Response = MsgBox( _
+              prompt:=shp.Name & vbCrLf & _
+              sTemp & vbCrLf & vbCrLf & _
+              "Do you want to continue?", _
+              Buttons:=vbYesNo, Title:="Continue?")
+            If Response <> vbYes Then
+                Set rStart = Nothing
+                Exit Sub
+            End If
+        End If
+    Next
+    MsgBox "No more found"
+    rStart.Select
+    Set rStart = Nothing
+End Sub
