@@ -1,0 +1,10 @@
+Sub ShapeToText()
+    'Pull-in what is selected on screen
+    Set UserSelection = ActiveWindow.Selection
+    Dim TextInShape As String
+    For Each shape In ActiveWindow.Selection
+        TextInShape = TextInShape & shape.text & vbNewLine
+    Next
+    ' Save TextInShape to Clipboard
+    SetClipboard text
+End Sub
