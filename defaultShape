@@ -1,0 +1,12 @@
+Sub defaultShape()
+    'Set default rectangle
+    ThisWorkbook.Sheets("Shape").Shapes("rectangleTalent").Copy
+    ActiveSheet.Paste
+    ActiveSheet.Shapes("rectangleTalent").SetShapesDefaultProperties
+    ActiveSheet.Shapes("rectangleTalent").Delete
+    'Set default oval
+    ThisWorkbook.Sheets("Shape").Shapes("ovalTalent").Copy
+    ActiveSheet.Paste
+    ActiveSheet.Shapes("ovalTalent").SetShapesDefaultProperties
+    ActiveSheet.Shapes("ovalTalent").Delete
+End Sub
