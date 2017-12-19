@@ -1,0 +1,130 @@
+Sub ExportData()
+    ' Init
+    Dim connection As ADODB.connection
+    Dim recordSet As ADODB.recordSet
+    Dim connectString As String, schema As String, user As String, pass As String
+    
+    ' Get DB Information
+    schema = Worksheets("OracleExport").Range("I4").Value
+    user = Worksheets("OracleExport").Range("I5").Value
+    pass = Worksheets("OracleExport").Range("I6").Value
+    
+    ' Create connection String
+    connectString = "Provider=OraOLEDB.Oracle.1;Persist Security Info=True" & _
+    ";Data Source=127.0.0.1:1521/xe;" & "User ID=" & user & ";Password=" & pass
+    
+    Set connection = New ADODB.connection
+    Set recordSet = New ADODB.recordSet
+    
+    ' Open connect
+    connection.Open connectString
+    
+    ' Get Export Direction
+    Dim opt As Shape
+    Dim direction As String
+    Set opt = Worksheets("OracleExport").Shapes("Option Button 4")
+    If opt.ControlFormat.Value = xlOn Then
+        direction = "Vertical"
+    Else
+        direction = "Horizontal"
+    End If
+    
+    ' Init & Get Table List
+    Dim tableRange As Range
+    Set tableRange = Worksheets("OracleExport").Range("C12:C100")
+    Dim cel As Range
+    
+    ' Dont update screen when export
+    Application.ScreenUpdating = False
+    
+    ' Export Table
+    For Each Table In tableRange.Cells
+        ' If Table is Empty then Exit
+        If IsEmpty(Table.Value) Then
+            Exit For
+        End If
+        
+        ' Get Conditon WHERE CLAUSE
+        Set Condition = Table.Offset(0, 1)
+        
+        Dim sqlStr As String
+        
+        ' Create SQL
+        If IsEmpty(Condition.Value) Then
+            sqlStr = "SELECT * FROM " & Table.Value
+        Else
+            sqlStr = "SELECT * FROM " & Table.Value & _
+                     " WHERE " & Condition.Value
+        End If
+        ' Debug.Print sqlStr
+        
+        ' Query
+        With recordSet
+            .ActiveConnection = connection
+            .Source = sqlStr
+            .CursorType = adOpenKeyset
+            .Open
+            End With
+            
+        ' Check Exist Sheet
+        If CheckIfSheetExists(Table.Value) Then
+            Sheets(Table.Value).Cells.Clear
+        Else
+            Sheets.Add(, Sheets(Sheets.Count)).Name = Table.Value
+        End If
+        
+        ' Format Cell As Text
+        Sheets(1).Range("BB1").Copy
+        Sheets(Table.Value).Cells.PasteSpecial xlFormats
+        
+        ' EXPORT DICRECTION : Horizontal
+        If (direction = "Horizontal") Then
+        ' Create Header
+        For colHeader = 0 To recordSet.Fields.Count - 1
+        Sheets(Table.Value).Cells(1, (colHeader + 1)).Value = recordSet.Fields(colHeader).Name
+        Next colHeader
+        ' Export Data
+        i = 1
+        While Not (recordSet.EOF)
+            For j = 0 To recordSet.Fields.Count - 1
+                Sheets(Table.Value).Cells(i + 1, j + 1) = recordSet.Fields(j).Value
+            Next j
+            recordSet.MoveNext
+            i = i + 1
+        Wend
+        ' EXPORT DICRECTION : Vertical
+        Else
+            ' Create Header
+            For colHeader = 0 To recordSet.Fields.Count - 1
+                Sheets(Table.Value).Cells((colHeader + 1), 1).Value = recordSet.Fields(colHeader).Name
+            Next colHeader
+            ' Export Data
+            i = 1
+            While Not (recordSet.EOF)
+                For j = 0 To recordSet.Fields.Count - 1
+                    Sheets(Table.Value).Cells(j + 1, i + 1) = recordSet.Fields(j).Value
+                Next j
+                recordSet.MoveNext
+                i = i + 1
+            Wend
+            Debug.Print direction
+            
+        End If
+        ' Close RecordSet
+        recordSet.Close
+    Next Table
+    ' Move to Sheet 1
+    Sheets(1).Select
+    ' Turn on Screen Update
+    Application.ScreenUpdating = True
+End Sub
+
+Function CheckIfSheetExists(SheetName As String) As Boolean
+      CheckIfSheetExists = False
+      For Each WS In Worksheets
+        If SheetName = WS.Name Then
+          CheckIfSheetExists = True
+          Exit Function
+        End If
+      Next WS
+End Function
