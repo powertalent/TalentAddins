@@ -1,0 +1,14 @@
+Sub PasteImageAndInsertRow()
+    ' Get address below current row
+    currentRange = Selection.Offset(1, 0).Address(ReferenceStyle:=xlA1, RowAbsolute:=False, ColumnAbsolute:=False)
+    ' Paste Image from clipboard
+    Selection.PasteSpecial
+    ' Get image height
+    imageHeight = Selection.Height
+    ' Get number of rows = image Height
+    imageRowHeight = imageHeight / 15 + 1
+    ' Insert blank row
+    For i = 0 To imageRowHeight
+        Range(currentRange).EntireRow.Insert
+    Next i
+End Sub
