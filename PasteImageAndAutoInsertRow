@@ -6,7 +6,7 @@ Sub PasteImageAndInsertRow()
     ' Get image height
     imageHeight = Selection.Height
     ' Get number of rows = image Height
-    imageRowHeight = imageHeight / 15 + 1
+    imageRowHeight = Int(imageHeight / 15) + 1
     ' Insert blank row
     For i = 0 To imageRowHeight
         Range(currentRange).EntireRow.Insert
