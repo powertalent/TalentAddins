@@ -1,13 +1,14 @@
 Sub ExportData()
+    
     ' Init
     Dim connection As ADODB.connection
     Dim recordSet As ADODB.recordSet
     Dim connectString As String, schema As String, user As String, pass As String
     
     ' Get DB Information
-    schema = Worksheets("OracleExport").range("I4").Value
-    user = Worksheets("OracleExport").range("I5").Value
-    pass = Worksheets("OracleExport").range("I6").Value
+    schema = Worksheets("OracleExport").range("schemaName").Value
+    user = Worksheets("OracleExport").range("userName").Value
+    pass = Worksheets("OracleExport").range("password").Value
     
     ' Create connection String
     connectString = "Provider=OraOLEDB.Oracle.1;Persist Security Info=True" & _
@@ -31,16 +32,27 @@ Sub ExportData()
     
     ' Init & Get Table List
     Dim tableRange As range
-    Set tableRange = Worksheets("OracleExport").range("C12:C100")
+    Set tableRange = Worksheets("OracleExport").range("I13:I100")
     Dim cel As range
     
     ' Dont update screen when export
     Application.ScreenUpdating = False
     
+    ' Check MODE is EXPORT or GET RESULT COUNT
+    Dim IsGetResultCount As Boolean
+    IsGetResultCount = False
+    If (ActiveSheet.Buttons(Application.Caller).Caption = "Get Result Count") Then
+        ' If is Get Result MODE then set Flag = TRUE
+        IsGetResultCount = True
+    Else
+        ' If is Export Data MODE then Delete All Data Sheet
+        Call DeleteAllDataSheet
+    End If
+    
     ' Export Table
     For Each Table In tableRange.Cells
         ' If Table is Empty then Exit
-        If IsEmpty(Table.Value) Then
+        If IsEmpty(Table.Value) Or Table.Value = "" Then
             Exit For
         End If
         
@@ -65,6 +77,15 @@ Sub ExportData()
             .CursorType = adOpenKeyset
             .Open
             End With
+        
+        ' Write Result Count
+        Condition.Offset(0, 1).Value = recordSet.Fields.Count
+            
+        ' Check Get Result Count or Export
+        If (IsGetResultCount) Then
+            ' Next Table
+            GoTo NextTable
+        End If
             
         ' Check Exist Sheet
         If CheckIfSheetExists(Table.Value) Then
@@ -72,6 +93,10 @@ Sub ExportData()
         Else
             Sheets.Add(, Sheets(Sheets.Count)).Name = Table.Value
         End If
+                
+        ' Add Link To Table
+        TableJP = Table.Offset(0, -6).Value
+        Table.Hyperlinks.Add Anchor:=Table, Address:="", SubAddress:=Table.Value & "!A1", TextToDisplay:=TableJP
         
         ' Format Cell As Text
         'Sheets(1).Range("BB1").Copy
@@ -87,7 +112,7 @@ Sub ExportData()
         i = 1
         While Not (recordSet.EOF)
             For j = 0 To recordSet.Fields.Count - 1
-                Call SetValueWithCellFormat(Sheets(Table.Value).Cells(i + 1, j + 1), recordSet.Fields(j)) 
+                Call SetValueWithCellFormat(Sheets(Table.Value).Cells(i + 1, j + 1), recordSet.Fields(j))
             Next j
             recordSet.MoveNext
             i = i + 1
@@ -102,7 +127,7 @@ Sub ExportData()
             i = 1
             While Not (recordSet.EOF)
                 For j = 0 To recordSet.Fields.Count - 1
-                    Call SetValueWithCellFormat(Sheets(Table.Value).Cells(j + 1, i + 1), recordSet.Fields(j))                    
+                    Call SetValueWithCellFormat(Sheets(Table.Value).Cells(j + 1, i + 1), recordSet.Fields(j))
                 Next j
                 recordSet.MoveNext
                 i = i + 1
@@ -110,10 +135,11 @@ Sub ExportData()
             Debug.Print direction
             
         End If
-        ' Close RecordSet
-        recordSet.Close
         ' Set AutoFit Column
         Sheets(Table.Value).Columns("A:Z").AutoFit
+NextTable:
+    ' Close RecordSet
+        recordSet.Close
     Next Table
     
     ' Move to Sheet 1
@@ -130,13 +156,18 @@ Sub SetValueWithCellFormat(range As range, recordSetField As Object)
         Case 130, 202
             ' Format Cell As Text
             range.NumberFormat = "@"
+            ' Align Left
+            range.HorizontalAlignment = xlLeft
             
         ' 135 : adDBTimeStamp ~ Timestamp
         Case 135
             ' Format : yyyy/mm/dd hh:mm:ss
             range.NumberFormat = "yyyy/mm/dd hh:mm:ss"
-            
+            ' Align Left
+            range.HorizontalAlignment = xlLeft
         Case Else
+            ' Align Left
+            range.HorizontalAlignment = xlLeft
         
     End Select
     ' Set Value to Cell
@@ -151,4 +182,35 @@ Function CheckIfSheetExists(SheetName As String) As Boolean
           Exit Function
         End If
       Next WS
+End Function
+
+
+Sub btnDirChoose()
+    Worksheets("OracleExport").range("I9").Value = GetFolder()
+End Sub
+
+Sub DeleteAllDataSheet()
+    'Stopping Application Alerts
+    Application.DisplayAlerts = False
+    Do While Worksheets.Count > 1
+        Worksheets(2).Delete
+    Loop
+    'Enabling Application alerts once we are done with our task
+    Application.DisplayAlerts = True
+End Sub
+
+Function GetFolder() As String
+    Dim fldr As FileDialog
+    Dim sItem As String
+    Set fldr = Application.FileDialog(msoFileDialogFolderPicker)
+    With fldr
+        .Title = "Select a Folder"
+        .AllowMultiSelect = False
+        .InitialFileName = Application.DefaultFilePath
+        If .Show <> -1 Then GoTo NextCode
+        sItem = .SelectedItems(1)
+    End With
+NextCode:
+    GetFolder = sItem
+    Set fldr = Nothing
 End Function
