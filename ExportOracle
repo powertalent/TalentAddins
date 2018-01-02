@@ -79,7 +79,7 @@ Sub ExportData()
             End With
         
         ' Write Result Count
-        Condition.Offset(0, 1).Value = recordSet.Fields.Count
+        Condition.Offset(0, 1).Value = recordSet.RecordCount
             
         ' Check Get Result Count or Export
         If (IsGetResultCount) Then
