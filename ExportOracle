@@ -1,25 +1,66 @@
-Sub ExportData()
-    
-    ' Init
-    Dim connection As ADODB.connection
-    Dim recordSet As ADODB.recordSet
-    Dim connectString As String, schema As String, user As String, pass As String
-    
+Dim connection As ADODB.connection
+Dim recordSet As ADODB.recordSet
+Dim connectString As String, schema As String, user As String, pass As String
+
+Sub GetConnection()
     ' Get DB Information
     schema = Worksheets("OracleExport").range("schemaName").Value
     user = Worksheets("OracleExport").range("userName").Value
     pass = Worksheets("OracleExport").range("password").Value
-    
     ' Create connection String
     connectString = "Provider=OraOLEDB.Oracle.1;Persist Security Info=True" & _
     ";Data Source=127.0.0.1:1521/xe;" & "User ID=" & user & ";Password=" & pass
-    
+    ' Init connection
     Set connection = New ADODB.connection
+    ' Init recordSet
     Set recordSet = New ADODB.recordSet
-    
     ' Open connect
     connection.Open connectString
-    
+End Sub
+
+Sub GetResultCount()
+    ' Connect DB
+    Call GetConnection
+    ' Init & Get Table List
+    Dim tableRange As range
+    Dim sqlStr As String
+    Set tableRange = Worksheets("OracleExport").range("I13:I100")
+    ' Dont update screen when export
+    Application.ScreenUpdating = False
+    ' Export Table
+    For Each Table In tableRange.Cells
+        ' If Table is Empty then Exit
+        If IsEmpty(Table.Value) Or Table.Value = "" Then
+            Exit For
+        End If
+        ' Get Conditon WHERE CLAUSE
+        Set Condition = Table.Offset(0, 1)
+        ' Get Sort ORDER BY CLAUSE
+        Set OrderBy = Condition.Offset(0, 1)
+        ' Get resultCount Cell Address
+        Set resultCountAddress = OrderBy.Offset(0, 1)
+        ' Create SQL
+        ' Basic SQL
+        sqlStr = "SELECT Count(*) FROM " & Table.Value
+        ' have WHERE Condition
+        If IsEmpty(Condition.Value) = False Then
+           sqlStr = sqlStr & " WHERE " & Condition.Value
+        End If
+        ' have ORDER BY Condition
+        If IsEmpty(OrderBy.Value) = False Then
+           sqlStr = sqlStr & " ORDER BY " & OrderBy.Value
+        End If
+        recordSet.Open sqlStr, connection, adOpenStatic
+        ' Setting result Count
+        resultCountAddress.Value = recordSet.Fields(0).Value
+        recordSet.Close
+    Next
+    connection.Close
+End Sub
+
+Sub ExportData()
+    ' Connect DB
+    Call GetConnection
     ' Get Export Direction
     Dim opt As Shape
     Dim direction As String
@@ -38,16 +79,8 @@ Sub ExportData()
     ' Dont update screen when export
     Application.ScreenUpdating = False
     
-    ' Check MODE is EXPORT or GET RESULT COUNT
-    Dim IsGetResultCount As Boolean
-    IsGetResultCount = False
-    If (ActiveSheet.Buttons(Application.Caller).Caption = "Get Result Count") Then
-        ' If is Get Result MODE then set Flag = TRUE
-        IsGetResultCount = True
-    Else
-        ' If is Export Data MODE then Delete All Data Sheet
-        Call DeleteAllDataSheet
-    End If
+    ' If is Export Data MODE then Delete All Data Sheet
+    Call DeleteAllDataSheet
     
     ' Export Table
     For Each Table In tableRange.Cells
@@ -58,35 +91,27 @@ Sub ExportData()
         
         ' Get Conditon WHERE CLAUSE
         Set Condition = Table.Offset(0, 1)
+        ' Get Sort ORDER BY CLAUSE
+        Set OrderBy = Condition.Offset(0, 1)
         
         Dim sqlStr As String
         
-        ' Create SQL
-        If IsEmpty(Condition.Value) Then
-            sqlStr = "SELECT * FROM " & Table.Value
-        Else
-            sqlStr = "SELECT * FROM " & Table.Value & _
-                     " WHERE " & Condition.Value
+        '''' Create SQL QUERY
+        ' Basic SQL
+        sqlStr = "SELECT * FROM " & Table.Value
+        ' have WHERE Condition
+        If IsEmpty(Condition.Value) = False Then
+           sqlStr = sqlStr & " WHERE " & Condition.Value
         End If
-        ' Debug.Print sqlStr
+        ' have ORDER BY Condition
+        If IsEmpty(OrderBy.Value) = False Then
+           sqlStr = sqlStr & " ORDER BY " & OrderBy.Value
+        End If
         
         ' Query
-        With recordSet
-            .ActiveConnection = connection
-            .Source = sqlStr
-            .CursorType = adOpenKeyset
-            .Open
-            End With
-        
+        recordSet.Open sqlStr, connection, adOpenStatic
         ' Write Result Count
-        Condition.Offset(0, 1).Value = recordSet.RecordCount
-            
-        ' Check Get Result Count or Export
-        If (IsGetResultCount) Then
-            ' Next Table
-            GoTo NextTable
-        End If
-            
+        Condition.Offset(0, 1).Offset(0, 1).Value = recordSet.RecordCount
         ' Check Exist Sheet
         If CheckIfSheetExists(Table.Value) Then
             Sheets(Table.Value).Cells.Clear
@@ -99,8 +124,10 @@ Sub ExportData()
         Table.Hyperlinks.Add Anchor:=Table, Address:="", SubAddress:=Table.Value & "!A1", TextToDisplay:=TableJP
         
         ' Format Cell As Text
-        'Sheets(1).Range("BB1").Copy
-        'Sheets(Table.Value).Cells.PasteSpecial xlFormats
+        ' Declare recordSet for get Column Name
+        Dim recordSet2 As ADODB.recordSet
+        Set recordSet2 = New ADODB.recordSet
+        sqlGetColumnName = "select COLUMN_NAME, COMMENTS from ALL_COL_COMMENTS where table_name = '" & Table.Value & "'"
         
         ' EXPORT DICRECTION : Horizontal
         If (direction = "Horizontal") Then
@@ -119,15 +146,27 @@ Sub ExportData()
         Wend
         ' EXPORT DICRECTION : Vertical
         Else
+            
             ' Create Header
+                ' Query for get Columns Name
+                recordSet2.Open sqlGetColumnName, connection
             For colHeader = 0 To recordSet.Fields.Count - 1
-                Sheets(Table.Value).Cells((colHeader + 1), 1).Value = recordSet.Fields(colHeader).Name
+                ' colHeaderName
+                colHeaderName = recordSet.Fields(colHeader).Name
+                ' filter by Column Name
+                recordSet2.Filter = "COLUMN_NAME='" & colHeaderName & "'"
+                ' Setting column Name (Comment)
+                Sheets(Table.Value).Cells((colHeader + 1), 1).Value = recordSet2.Fields(1).Value
+                ' Setting column Name
+                Sheets(Table.Value).Cells((colHeader + 1), 2).Value = recordSet.Fields(colHeader).Name
+                
             Next colHeader
+            recordSet2.Close
             ' Export Data
             i = 1
             While Not (recordSet.EOF)
                 For j = 0 To recordSet.Fields.Count - 1
-                    Call SetValueWithCellFormat(Sheets(Table.Value).Cells(j + 1, i + 1), recordSet.Fields(j))
+                    Call SetValueWithCellFormat(Sheets(Table.Value).Cells(j + 1, i + 2), recordSet.Fields(j))
                 Next j
                 recordSet.MoveNext
                 i = i + 1
@@ -142,6 +181,8 @@ NextTable:
         recordSet.Close
     Next Table
     
+    ' close Connection
+    connection.Close
     ' Move to Sheet 1
     Sheets(1).Select
     ' Turn on Screen Update
