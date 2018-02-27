@@ -71,6 +71,8 @@ Sub ConvertSheetOne()
     Dim text As String
     Dim result As String
     Dim shapeBackColorRGB As Long
+    'Split cell contents
+    Dim IDNameArray() As String
     For i = lngMin To lngMax
     
         text = shapeArray(i).TextFrame.Characters.text
@@ -80,12 +82,16 @@ Sub ConvertSheetOne()
         ElseIf i = lngMax Then
             result = result & "Destination Screen : " & text & vbNewLine
         ElseIf shapeBackColorRGB = 6740479 Then
-            result = result & "Business Module : " & text & vbNewLine
+            IDNameArray() = Split(text, "")
+            result = result & "Business Module ID: " & IDNameArray(0) & vbNewLine
+            result = result & "Business Module Name: " & IDNameArray(1) & vbNewLine
         ElseIf shapeBackColorRGB = 13369497 Then
             If InStr(text, "(DSM)") > 0 Then
                 result = result & "DSM : " & text & vbNewLine
             Else
-                result = result & "Support Module : " & text & vbNewLine
+                IDNameArray() = Split(text, "")
+                result = result & "Support Module ID: " & IDNameArray(0) & vbNewLine
+                result = result & "Support Module Name: " & IDNameArray(1) & vbNewLine
             End If
         ElseIf InStr(text, ".act") > 0 Then
             result = result & "Action : " & text & vbNewLine
@@ -98,5 +104,3 @@ Sub ConvertSheetOne()
     SetClipboard result
     'MsgBox ws.Name
 End Sub
-
-
