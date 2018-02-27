@@ -1,0 +1,102 @@
+Sub ConvertSheetOne()
+    Dim ws As Worksheet
+    Set ws = ThisWorkbook.Worksheets(1)
+    Dim shapeArray() As Shape
+    i = 0
+    ' Shape To Array
+    ReDim shapeArray(ws.Shapes.Count)
+    On Error Resume Next
+    For Each Shape In ws.Shapes
+        If Not Shape.TextFrame Is Nothing Then
+         If Shape.TextFrame2.HasText Then
+            Set shapeArray(i) = Shape
+            i = i + 1
+         End If
+        End If
+    Next Shape
+    
+    ' Delete Shape no Text
+    ReDim Preserve shapeArray(i - 1)
+    
+    ' Sort
+    Dim j As Long
+    Dim lngMin As Long
+    Dim lngMax As Long
+    Dim shapeTmp As Shape
+    lngMin = LBound(shapeArray)
+    lngMax = UBound(shapeArray)
+    For i = lngMin To lngMax - 1
+      For j = i + 1 To lngMax
+        If shapeArray(i).Top > shapeArray(j).Top Then
+          Set shapeTmp = shapeArray(i)
+          Set shapeArray(i) = shapeArray(j)
+          Set shapeArray(j) = shapeTmp
+        End If
+      Next j
+    Next i
+    
+    'Sort ResultCode
+    Dim markArr() As Integer
+    ReDim markArr(lngMax)
+    markArr(0) = 0
+    For i = lngMin + 1 To lngMax
+      
+        If Len(shapeArray(i).TextFrame.Characters.text) = 4 And Len(shapeArray(i - 1).TextFrame.Characters.text) = 4 Then
+            markArr(i) = markArr(i - 1)
+            markArr(markArr(i - 1)) = i
+        Else
+            markArr(i) = i
+        End If
+    Next i
+    
+    i = 0
+    Do While i < lngMax
+        If markArr(i) <> i Then
+            'Sort result Code
+            For j = i To markArr(i)
+                For k = i + 1 To markArr(i)
+                    If (shapeArray(k).TextFrame.Characters.text < shapeArray(j).TextFrame.Characters.text) Then
+                        Set shapeTmp = shapeArray(k)
+                        Set shapeArray(k) = shapeArray(j)
+                        Set shapeArray(j) = shapeTmp
+                    End If
+                Next
+            Next
+            i = markArr(i) + 1
+        Else
+            i = i + 1
+        End If
+    Loop
+    ' Sample Phan Loai
+    Dim text As String
+    Dim result As String
+    Dim shapeBackColorRGB As Long
+    For i = lngMin To lngMax
+    
+        text = shapeArray(i).TextFrame.Characters.text
+        shapeBackColorRGB = shapeArray(i).Fill.ForeColor.RGB
+        If i = 0 Then
+            result = result & "Begin Screen : " & text & vbNewLine
+        ElseIf i = lngMax Then
+            result = result & "Destination Screen : " & text & vbNewLine
+        ElseIf shapeBackColorRGB = 6740479 Then
+            result = result & "Business Module : " & text & vbNewLine
+        ElseIf shapeBackColorRGB = 13369497 Then
+            If InStr(text, "(DSM)") > 0 Then
+                result = result & "DSM : " & text & vbNewLine
+            Else
+                result = result & "Support Module : " & text & vbNewLine
+            End If
+        ElseIf InStr(text, ".act") > 0 Then
+            result = result & "Action : " & text & vbNewLine
+        Else
+            result = result & "Result Code :" & text & vbNewLine
+        End If
+        'text = text & i & " : " & shapeArray(i).TextFrame.Characters.text & vbNewLine
+    Next i
+    MsgBox result
+    SetClipboard result
+    'MsgBox ws.Name
+End Sub
+
+
