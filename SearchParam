@@ -1,0 +1,50 @@
+Function TestRead() As String
+    On Error GoTo ErrHandler
+    Application.ScreenUpdating = False
+    
+    Dim objWorkbook As Workbook
+    Set objWorkbook = Workbooks.Open("D:\Code\VBA\Shape To Text\Program1.xlsx", True, True)
+    Dim objWorkSheet As Worksheet
+    Set objWorkSheet = objWorkbook.Sheets(1)
+    objWorkSheet.Columns("B:B").Select
+    Dim InputCell As Range
+    Dim OutputCell As Range
+    Dim ResultCell As Range
+    
+    Set InputCell = Selection.Find(What:="Input", After:=ActiveCell, LookIn:=xlFormulas, _
+        LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, _
+        MatchCase:=False, SearchFormat:=False)
+        
+    Set OutputCell = Selection.Find(What:="Output", After:=ActiveCell, LookIn:=xlFormulas, _
+        LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, _
+        MatchCase:=False, SearchFormat:=False)
+        
+    MsgBox InputCell.Row & ":" & OutputCell.Row
+    
+    objWorkSheet.Rows(InputCell.Row & ":" & OutputCell.Row).Select
+    
+    Dim KeyName As Range
+    
+    Set KeyName = Selection.Find(What:="KEY NAME", After:=ActiveCell, LookIn:=xlFormulas, _
+        LookAt:=xlWhole, SearchOrder:=xlByRows, SearchDirection:=xlNext, _
+        MatchCase:=False, SearchFormat:=False)
+    
+    Dim KeyNameFind As Range
+    Set KeyNameFind = objWorkSheet.Range(KeyName.Offset(1, 0).Address(RowAbsolute:=False, ColumnAbsolute:=False), KeyName.Offset(10, 0).Address(RowAbsolute:=False, ColumnAbsolute:=False))
+    Dim param As String
+    For Each cell In KeyNameFind.Cells
+        If IsEmpty(cell) Then
+            Exit For
+        End If
+        param = param & cell & vbNewLine
+    Next cell
+     
+    'MsgBox KeyName.Offset(10, 0).Address
+    
+    objWorkbook.Close False
+    
+    TestRead = param
+ErrHandler:
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+End Function
