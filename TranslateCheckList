@@ -1,0 +1,47 @@
+Sub TransCheckListJP2VN()
+    ' Define Regex Object
+    Dim RegEx As Object
+    Set RegEx = CreateObject("VBScript.RegExp")
+    On Error Resume Next
+    RegEx.Global = True
+    
+    ' Define Regex List
+    Dim regexRange As Range: Set regexRange = ThisWorkbook.Sheets("Regex").Range("A3:A4")
+    Dim regexReplaceCell As Range
+    ' Translate cell
+    For Each translateCell In Selection
+        If (translateCell.Value <> "") Then
+            
+            For Each regexCell In regexRange
+                Set regexReplaceCell = regexCell.Offset(0, 1)
+                RegEx.pattern = regexCell.Value
+                translateCell.Value = RegEx.Replace(translateCell.Value, regexReplaceCell.Value)
+                'translateCell.Value = RegExReplace(translateCell.Value, regexCell.Value, regexReplaceCell.Value)
+            Next regexCell
+        End If
+    Next translateCell
+End Sub
+
+Sub TransCheckListVN2JP()
+    ' Define Regex Object
+    Dim RegEx As Object
+    Set RegEx = CreateObject("VBScript.RegExp")
+    On Error Resume Next
+    RegEx.Global = True
+    
+    ' Define Regex List
+    Dim regexRange As Range: Set regexRange = ThisWorkbook.Sheets("Regex").Range("D3:D4")
+    Dim regexReplaceCell As Range
+    ' Translate cell
+    For Each translateCell In Selection
+        If (translateCell.Value <> "") Then
+            
+            For Each regexCell In regexRange
+                Set regexReplaceCell = regexCell.Offset(0, 1)
+                RegEx.pattern = regexCell.Value
+                translateCell.Value = RegEx.Replace(translateCell.Value, regexReplaceCell.Value)
+                'translateCell.Value = RegExReplace(translateCell.Value, regexCell.Value, regexReplaceCell.Value)
+            Next regexCell
+        End If
+    Next translateCell
+End Sub
